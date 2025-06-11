@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Employee Form and Table</title>
+  <!-- Bootstrap CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+
+    <ul class="nav nav-pills mb-3 justify-content-end p-3" id="pills-tab" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active logout" id="pills-home-tab" data-bs-toggle="pill" data-bs-target="#pills-home" type="button" role="tab" aria-controls="pills-home" aria-selected="true">Logout</button>
+        </li>
+    </ul>
+
+<div class="container py-5">
+  <h2 class="text-center mb-4">Employed </h2>
+  
+  <!-- Employee Form -->
+  <form id="employeeForm" class="mb-4">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label for="name" class="form-label">Name</label>
+        <input type="text" class="form-control" id="name" required>
+      </div>
+      <div class="col-md-6">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" class="form-control" id="email" required>
+      </div>
+      <div class="col-md-6">
+        <label for="age" class="form-label">Age</label>
+        <input type="number" class="form-control" id="age" required>
+      </div>
+      <div class="col-md-6">
+        <label for="address" class="form-label">Address</label>
+        <input type="text" class="form-control" id="address" required>
+      </div>
+      <div class="mb-3">
+        <label for="imageInput" class="form-label">Choose an image</label>
+        <input class="form-control" type="file" id="imageInput" name="imageInput" accept="image/*">
+      </div>
+
+    </div>
+    <div class="d-flex gap-2 mt-4 p-3 bg-light rounded shadow-sm">
+        <button id="save" class="btn btn-success flex-fill">Save</button>
+        <button id="update" class="btn btn-warning flex-fill">Update</button>
+        <button id="delete" class="btn btn-danger flex-fill">Delete</button>
+      </div>
+      
+    
+  </form>
+
+  <!-- Employee Table -->
+  <h4>Employee List</h4>
+  <table class="table table-bordered table-striped" id="employeeTable">
+    <thead class="table-dark">
+      <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Age</th>
+        <th>Address</th>
+        <th>Image</th>
+      </tr>
+    </thead>
+    <tbody id="tbody">
+      <!-- Filled by JS -->
+    </tbody>
+  </table>
+</div>
+
+<!-- Bootstrap JS + jQuery -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<script>
+
+    const apiUrl = 'http://localhost:8080/EMS_Web_exploded/api/v1/dashboard';
+    let base64Image = "";
+    var id;
+
+    $(document).ready(function() {
+        var email=localStorage.getItem('uemail');
+            if (!email) {
+                window.location.href = 'singn.html';
+            }else {
+                alert('Welcome to the dashboard, ' + email);
+            }
+    });
+    function refreshTable(data) {
+        const tbody = $('#tbody');
+        tbody.empty();
+        data.forEach(emp => {
+            tbody.append(`
+                <tr>
+                    <td>${emp.id}</td>
+                    <td>${emp.name}</td>
+                    <td>${emp.email}</td>
+                    <td>${emp.age}</td>
+                    <td>${emp.address}</td>
+                    <td>${emp.image ? `<img src="${emp.image}" alt="Employee Image" style="max-width:100px;max-height:100px;">` : 'No Image'}</td>
+                </tr>
+            `);
+        });
+    }
+
+    $("#tbody").on('click', 'tr', function () {
+
+        const selectedRow = $(this).children('td');
+
+        id = selectedRow.eq(0).text();
+        console.log(id);
+        
+        const name = selectedRow.eq(1).text();
+        const email = selectedRow.eq(2).text();
+        const age = selectedRow.eq(3).text();
+        const address = selectedRow.eq(4).text();
+        
+
+        $('#id').val(id);
+        $('#name').val(name);
+        $('#email').val(email);
+        $('#age').val(age);
+        $('#address').val(address);
+
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+    const savedPassword = localStorage.getItem('password');
+        console.log('Password:', savedPassword);
+
+        // if (savedPassword === null) {
+        // console.log('No password found in localStorage.');
+        // // You can optionally redirect or show a warning here
+        // }else{loadTable();}
+        loadTable();
+    
+    })
+
+    function loadTable() {
+        $.ajax({
+            url: apiUrl,
+            method: 'GET',
+            success: function (response) {
+                refreshTable(response);
+            },
+            error: function () {
+                alert("Error fetching data");
+            }
+        });
+    }
+
+
+
+    document.getElementById('imageInput').addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function (event) {
+            base64Image = event.target.result.split(',')[1]; // Get only base64 string
+        };
+
+        reader.readAsDataURL(file);
+    });
+
+
+        
+    $('#save').click(function () {
+            const event = {
+                name:$('#name').val(),
+                email: $('#email').val(),
+                age: $('#age').val(),
+                address: $('#address').val(),
+                image: base64Image
+
+               
+            };
+            $.ajax({
+                url: apiUrl,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(event),
+                success: function (response) {
+                    alert('Event created');
+                    loadTable();
+                    resetForm();
+                    },
+                error: function () {
+                    alert("Error creating event");
+                }
+            });
+        });
+
+        
+        $('#update').click(function () {
+
+        const event = {
+            id:id,
+            name: $('#name').val(),
+            email: $('#email').val(),
+            age: $('#age').val(),
+            address: $('#address').val(),
+            image: base64Image
+
+
+        };
+        $.ajax({
+            url: apiUrl,
+            method: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(event),
+            success: function (response) {
+                alert('Event updated');
+                loadTable();
+                resetForm();
+            },
+            error: function () {
+                alert("Error updating event");
+            }
+        });
+    });
+        
+    $('#delete').click(function () {
+
+        if (!id) {
+            alert("Please enter Event ID to delete.");
+            return;
+        }
+        $.ajax({
+            url: apiUrl,
+            method: 'DELETE',
+            contentType: 'application/json',
+            data: JSON.stringify({ id }),
+            success: function (response) {
+                alert('Event deleted');
+                resetForm();
+            },
+            error: function () {
+                alert("Error deleting event");
+            }
+        });
+    });
+
+    $('.logout').on('click', function() {
+
+        localStorage.removeItem('uemail');
+        window.location.href = 'singn.html';
+
+    });   
+
+   
+    
+</script>
+
+</body>
+</html>
